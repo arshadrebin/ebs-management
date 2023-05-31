@@ -28,4 +28,12 @@ In order to create an EBS volume and attach it to an EC2 instance, you can follo
     * Volume Type: Select the appropriate volume type based on your performance and cost requirements.
     
     * Size: Specify the size of the volume in gigabytes (GB).
+    * 
+<img width="451" alt="Screenshot 2023-05-31 125348" src="https://github.com/arshadrebin/ebs-management/assets/116037443/38aefa0e-d7a9-43f1-abc3-cf41d8925971">
+
+
+
+
+
+
 
