@@ -156,5 +156,73 @@ xvdf      202:80   0    1G  0 disk
 
 Now we can see that the newly added 1G volume is mounted to /var/www/html.
 
+How to increase the additional volume size for an Ec2 instance.
+
+Here we are going to see how we can increase the attached 1G additional volume in the above session to 2G.
+
+To increase the size of an existing EBS volume, you can follow these steps:
+
+* Open the AWS Management Console and navigate to the EC2 service.
+* Click on "Volumes" in the left-hand menu under "Elastic Block Store."
+* Select the EBS volume that you want to increase in size.
+* Click on the "Actions" dropdown menu and choose "Modify Volume."
+
+In the "Modify Volume" dialog, update the size of the volume to the desired new size. Note that you can only increase the size, not decrease it.
+
+<img width="932" alt="Screenshot 2023-05-31 131556" src="https://github.com/arshadrebin/ebs-management/assets/116037443/caceb830-d40e-479c-80fc-cb5b79c25bc5">
+
+* Click on the "Modify" button to apply the size increase.
+* Once the modification is complete, the EBS volume will be expanded to the new size.
+
+After increasing the volume size, you may need to perform additional steps to resize the file system and make use of the additional space. Let us see how do that. Log in to the instance.
+
+```
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0    8G  0 disk
+├─xvda1   202:1    0    8G  0 part /
+├─xvda127 259:0    0    1M  0 part
+└─xvda128 259:1    0   10M  0 part /boot/efi
+xvdf      202:80   0    1G  0 disk
+└─xvdf1   202:81   0 1023M  0 part /mnt
+
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0    8G  0 disk
+├─xvda1   202:1    0    8G  0 part /
+├─xvda127 259:0    0    1M  0 part
+└─xvda128 259:1    0   10M  0 part /boot/efi
+xvdf      202:80   0    2G  0 disk
+└─xvdf1   202:81   0 1023M  0 part /var/www/html
+```
+
+In the above snippet you can see the output of the disk before modifying the additional volume and after modifying. Here the addition of the additional 1G is reflected to the disk but not to the mount point. In oder to do this please follow the steps below.
+
+```
+[ec2-user@ip-172-31-46-3 ~]$ sudo growpart /dev/xvdf 1
+CHANGED: partition=1 start=2048 old: size=2095104 end=2097152 new: size=4192223 end=4194271
+[ec2-user@ip-172-31-46-3 ~]$ sudo lsblk -f
+NAME      FSTYPE FSVER LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINTS
+xvda
+├─xvda1   xfs          /     55a1aebd-f196-4f84-8afe-075f5d1dda63    6.3G    20% /
+├─xvda127
+└─xvda128 vfat   FAT16       0383-1543                               8.7M    13% /boot/efi
+xvdf
+└─xvdf1   ext4   1.0         5b392e98-f5cf-4605-95b1-e394eb98b4cd  916.2M     1% /var/www/html
+[ec2-user@ip-172-31-46-3 ~]$ sudo resize2fs /dev/xvdf1
+resize2fs 1.46.5 (30-Dec-2021)
+Filesystem at /dev/xvdf1 is mounted on /var/www/html; on-line resizing required
+old_desc_blocks = 1, new_desc_blocks = 1
+The filesystem on /dev/xvdf1 is now 524027 (4k) blocks long.
+
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0   8G  0 disk
+├─xvda1   202:1    0   8G  0 part /
+├─xvda127 259:0    0   1M  0 part
+└─xvda128 259:1    0  10M  0 part /boot/efi
+xvdf      202:80   0   2G  0 disk
+└─xvdf1   202:81   0   2G  0 part /var/www/html
+```
 
 
