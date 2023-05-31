@@ -40,8 +40,121 @@ Now let us see how to attach this volume to an Instance which we already have.
 
 <img width="587" alt="Screenshot 2023-05-31 125703" src="https://github.com/arshadrebin/ebs-management/assets/116037443/6e18023e-41ee-45dd-8519-0e38ab9cf6e4">
 
+Once attached, the volume will appear as a new block device on the EC2 instance.
+
+Inorder to check this, log in to the EC2 instance, and use commands lsblk.
 
 
+```
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0   8G  0 disk
+├─xvda1   202:1    0   8G  0 part /
+├─xvda127 259:0    0   1M  0 part
+└─xvda128 259:1    0  10M  0 part /boot/efi
+xvdf      202:80   0   1G  0 disk
+[ec2-user@ip-172-31-46-3 ~]$
+```
+
+From the above snippet you can see an additional disk named xvdf with 1G. Now we need to format and mount the additional volume.
+
+Here showing a scenario that a client want an additional volume mount to their website document root.
+
+
+![241898560-523e044c-8a3d-46c3-bb35-a3d1196a0659](https://github.com/arshadrebin/ebs-management/assets/116037443/7e458e19-0958-4d7a-96d9-95200df846d0)
+
+```
+[ec2-user@ip-172-31-46-3 ~]$ sudo fdisk /dev/xvdf
+
+Welcome to fdisk (util-linux 2.37.4).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+Device does not contain a recognized partition table.
+Created a new DOS disklabel with disk identifier 0xd4636e6b.
+
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (1-4, default 1):
+First sector (2048-2097151, default 2048):
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-2097151, default 2097151):
+
+Created a new partition 1 of type 'Linux' and of size 1023 MiB.
+
+Command (m for help): w
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0    8G  0 disk
+├─xvda1   202:1    0    8G  0 part /
+├─xvda127 259:0    0    1M  0 part
+└─xvda128 259:1    0   10M  0 part /boot/efi
+xvdf      202:80   0    1G  0 disk
+└─xvdf1   202:81   0 1023M  0 part
+[ec2-user@ip-172-31-46-3 ~]$ sudo mkfs -t ext4 /dev/xvdf1
+mke2fs 1.46.5 (30-Dec-2021)
+Creating filesystem with 261888 4k blocks and 65536 inodes
+Filesystem UUID: 5b392e98-f5cf-4605-95b1-e394eb98b4cd
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (4096 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+[ec2-user@ip-172-31-46-3 ~]$
+```
+
+Now mounting the additional volume to /var/www/html.
+
+```
+[ec2-user@ip-172-31-46-3 ~]$  sudo mount /dev/xvdf1 /mnt/
+[ec2-user@ip-172-31-46-3 ~]$
+[ec2-user@ip-172-31-46-3 ~]$
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0    8G  0 disk
+├─xvda1   202:1    0    8G  0 part /
+├─xvda127 259:0    0    1M  0 part
+└─xvda128 259:1    0   10M  0 part /boot/efi
+xvdf      202:80   0    1G  0 disk
+└─xvdf1   202:81   0 1023M  0 part /mnt
+[ec2-user@ip-172-31-46-3 ~]$ sudo cp -ra /var/www/html/* /mnt/
+[ec2-user@ip-172-31-46-3 ~]$ sudo umount /mnt
+[ec2-user@ip-172-31-46-3 ~]$ sudo systemctl stop httpd.service
+[ec2-user@ip-172-31-46-3 ~]$
+```
+
+Then add the entry in fstab for persistence.
+
+```
+[ec2-user@ip-172-31-46-3 ~]$ sudo vim /etc/fstab
+```
+
+<img width="736" alt="Screenshot 2023-05-31 130907" src="https://github.com/arshadrebin/ebs-management/assets/116037443/cfdb132c-cb3b-46da-ae82-adf962766133">
+
+```
+[ec2-user@ip-172-31-46-3 ~]$ sudo mount -a
+[ec2-user@ip-172-31-46-3 ~]$ sudo systemctl start httpd.service
+[ec2-user@ip-172-31-46-3 ~]$ lsblk
+NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
+xvda      202:0    0    8G  0 disk
+├─xvda1   202:1    0    8G  0 part /
+├─xvda127 259:0    0    1M  0 part
+└─xvda128 259:1    0   10M  0 part /boot/efi
+xvdf      202:80   0    1G  0 disk
+└─xvdf1   202:81   0 1023M  0 part /var/www/html
+[ec2-user@ip-172-31-46-3 ~]$
+```
+
+Now we can see that the newly added 1G volume is mounted to /var/www/html.
 
 
 
