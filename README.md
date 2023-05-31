@@ -4,5 +4,5 @@ Elastic Block Store (EBS) is a block storage service provided by Amazon Web Serv
 
 Let's see some key characteristics and features of EBS:
 
-* #### Block-Level Storage #### :  EBS offers block storage, which means it provides raw storage volumes that function similarly to physical hard drives or SSDs. These volumes can be formatted with a file system and used as persistent storage for EC2 instances.
-
+* **Block-Level Storage**:  EBS offers block storage, which means it provides raw storage volumes that function similarly to physical hard drives or SSDs. These volumes can be formatted with a file system and used as persistent storage for EC2 instances.
+* 
